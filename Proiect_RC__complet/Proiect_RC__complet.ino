@@ -88,7 +88,7 @@ void notFound(AsyncWebServerRequest *request) {
 
 AsyncWebServer server(80);
 
-// Replaces placeholder with DHT11 values
+
 String processor(const String& var){
   //Serial.println(var);
   if(var == "TEMPERATURE"){
