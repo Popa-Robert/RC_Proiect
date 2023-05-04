@@ -3,6 +3,7 @@
 #include <ESPAsyncWebSrv.h>
 #include "ESP32_MailClient.h"
 
+
 #define DEVICE "ESP32"
 
 // Import the InfluxDB libraries
@@ -61,7 +62,9 @@ String inputTemp_H = "24.0";
 String lastTemperature;
 String inputTemp_L = "21.0";
 //Perioada standard pentru citirea datelor
+
 String inputInterval = "2";
+
 
 // Pagina HTML din care preluam configuratii personalizate
 const char index_html[] PROGMEM = R"rawliteral(
@@ -107,6 +110,7 @@ String processor(const String& var){
     return inputTemp_L;
   }
   else if(var == "INTERVAL");{
+  
     return inputInterval;
   }
   return String();
@@ -253,7 +257,6 @@ void loop() {
           Serial.println("Esuare trimitere email");
             }
       }
-
 
   }
 
