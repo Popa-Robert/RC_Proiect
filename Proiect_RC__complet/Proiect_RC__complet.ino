@@ -120,7 +120,7 @@ const char* PARAM_INPUT_2 = "enable_email_input";
 const char* PARAM_INPUT_3 = "threshold_top_input";
 const char* PARAM_INPUT_4 = "threshold_bot_input";
 const char* PARAM_INPUT_5 = "interval_input";
-// Interval between sensor readings. Learn more about timers: https://RandomNerdTutorials.com/esp32-pir-motion-sensor-interrupts-timers/
+// Perioada dintre fiecare citire.
 unsigned long previousMillis = 0;     
  long interval = 2000;    
 
@@ -210,7 +210,8 @@ void loop() {
     previousMillis = currentMillis;
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
-    Serial.println(interval);
+    Serial.print(interval/1000);
+    Serial.println(" sec");
     // Temperature in Celsius degrees 
     float temperature = dht.readTemperature();
     float h = dht.readHumidity();
