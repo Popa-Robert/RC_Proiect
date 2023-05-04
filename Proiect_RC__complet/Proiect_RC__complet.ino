@@ -208,10 +208,13 @@ void setup() {
 
 void loop() {
   sensor.clearFields();
+  
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval*1000) {
+    
 
     previousMillis = currentMillis;
+    if (WiFi.status() == WL_CONNECTED){
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
     Serial.print(interval);
@@ -257,8 +260,15 @@ void loop() {
           Serial.println("Esuare trimitere email");
             }
       }
+        } else {
+        Serial.println("WiFi deconectat");
+          
+          WiFi.reconnect();
+      }
 
-  }
+
+    }
+  
 
  }
 
