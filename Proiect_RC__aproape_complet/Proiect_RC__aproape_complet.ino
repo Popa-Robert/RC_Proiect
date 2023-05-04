@@ -12,6 +12,8 @@
 #include "DHT.h"
 #define DHTPIN 27
 #define DHTTYPE DHT11
+// Configurare senzorului DHT11
+DHT dht(DHTPIN, DHTTYPE);
 
 // Datele pentru reteaua de wifi
 const char* ssid = "No Network";
@@ -43,34 +45,39 @@ Point sensor("climate");
 
 
 
-// To send Emails using Gmail on port 465 (SSL), you need to create an app password: https://support.google.com/accounts/answer/185833
+// Ca sa putem trimite un email folosing Gmail trebuie sa creem o parola folosind link: https://support.google.com/accounts/answer/185833
 #define emailSenderAccount    "popa.robert.u3n@student.ucv.ro"
 #define emailSenderPassword   "mleaywyingsarorl"
 #define smtpServer            "smtp.gmail.com"
 #define smtpServerPort        587
 #define emailSubject          "[ALERT] Temperature"
 
-// Default Recipient Email Address
-String inputMessage = "poparobert999@gmail.com";
+// Adresa de email standard a destinatarului
+String inputEmail = "poparobert999@gmail.com";
 String enableEmailChecked = "checked";
-String inputMessage2 = "true";
-// Default Threshold Temperature Value
-String inputMessage3 = "24.0";
+String inputCheck = "true";
+// Pragurile standard pentru limitle de temperatura
+String inputTemp_H = "24.0";
 String lastTemperature;
+String inputTemp_L = "21.0";
+//Perioada standard pentru citirea datelor
+String inputInterval = "2000";
 
-// HTML web page to handle 3 input fields (email_input, enable_email_input, threshold_input)
+// Pagina HTML din care preluam configuratii personalizate
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
   <title>Email Notification with Temperature</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   </head><body>
-  <h2>ROOM Temperature</h2> 
+  <h2>Temperatura incapere</h2> 
   <h3>%TEMPERATURE% &deg;C</h3>
-  <h2>ESP Email Notification</h2>
+  <h2>Alerta Email ESP32</h2>
   <form action="/get">
-    Email Address <input type="email" name="email_input" value="%EMAIL_INPUT%" required><br>
-    Enable Email Notification <input type="checkbox" name="enable_email_input" value="true" %ENABLE_EMAIL%><br>
-    Temperature Threshold <input type="number" step="0.1" name="threshold_input" value="%THRESHOLD%" required><br>
+    Adresa de email <input type="email" name="email_input" value="%EMAIL_INPUT%" required><br>
+    Notificare email <input type="checkbox" name="enable_email_input" value="true" %ENABLE_EMAIL%><br>
+    Pregul superior <input type="number" step="0.1" name="threshold_top_input" value="%THRESHOLD_TOP%" required><br>
+    Pragul inferior <input type="number" step="0.1" name="threshold_bot_input" value="%THRESHOLD_BOT%" required><br>
+    Interval <input type="number" step="1000" name="interval_input" value="%INTERVAL%" required><br>
     <input type="submit" value="Submit">
   </form>
 </body></html>)rawliteral";
@@ -88,32 +95,37 @@ String processor(const String& var){
     return lastTemperature;
   }
   else if(var == "EMAIL_INPUT"){
-    return inputMessage;
+    return inputEmail;
   }
   else if(var == "ENABLE_EMAIL"){
     return enableEmailChecked;
   }
-  else if(var == "THRESHOLD"){
-    return inputMessage3;
+  else if(var == "THRESHOLD_TOP"){
+    return inputTemp_H;
+  }
+   else if(var == "THRESHOLD_BOT"){
+    return inputTemp_L;
+  }
+  else if(var == "INTERVAL");{
+    return inputInterval;
   }
   return String();
 }
 
-// Flag variable to keep track if email notification was sent or not
+// Folosim emailSent pe post de flag pentru a vedea daca email s-a trimis
 bool emailSent = false;
 
 const char* PARAM_INPUT_1 = "email_input";
 const char* PARAM_INPUT_2 = "enable_email_input";
-const char* PARAM_INPUT_3 = "threshold_input";
-
+const char* PARAM_INPUT_3 = "threshold_top_input";
+const char* PARAM_INPUT_4 = "threshold_bot_input";
+const char* PARAM_INPUT_5 = "interval_input";
 // Interval between sensor readings. Learn more about timers: https://RandomNerdTutorials.com/esp32-pir-motion-sensor-interrupts-timers/
 unsigned long previousMillis = 0;     
-const long interval = 2000;    
+ long interval = 2000;    
 
-// Configurare senzorului DHT11
-DHT dht(DHTPIN, DHTTYPE);
 
-// The Email Sending data object contains config and data to send
+
 SMTPData smtpData;
 
 void setup() {
@@ -130,7 +142,7 @@ void setup() {
   Serial.print("ESP IP Address: http://");
   Serial.println(WiFi.localIP());
   
-  //sensor.addTag("device", DEVICE);
+  sensor.addTag("device", DEVICE);
   timeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
 
   // Initalizam senzorul DHT11
@@ -145,37 +157,46 @@ void setup() {
     Serial.println(client.getLastErrorMessage());
   }
 
-  // Send web page to client
+  // Trimitere pagina catre client
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html, processor);
   });
 
-  // Receive an HTTP GET request at <ESP_IP>/get?email_input=<inputMessage>&enable_email_input=<inputMessage2>&threshold_input=<inputMessage3>
+  // Prelucrare HTTP GET request 
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
-    // GET email_input value on <ESP_IP>/get?email_input=<inputMessage>
+    // Preluare adresa email
     if (request->hasParam(PARAM_INPUT_1)) {
-      inputMessage = request->getParam(PARAM_INPUT_1)->value();
-      // GET enable_email_input value on <ESP_IP>/get?enable_email_input=<inputMessage2>
+      inputEmail = request->getParam(PARAM_INPUT_1)->value();
+      // Preluare conditie pentru trimitere email sau nu
       if (request->hasParam(PARAM_INPUT_2)) {
-        inputMessage2 = request->getParam(PARAM_INPUT_2)->value();
+        inputCheck = request->getParam(PARAM_INPUT_2)->value();
         enableEmailChecked = "checked";
       }
       else {
-        inputMessage2 = "false";
+        inputCheck = "false";
         enableEmailChecked = "";
       }
-      // GET threshold_input value on <ESP_IP>/get?threshold_input=<inputMessage3>
+      // Preluare parametri pentru pragulile de temperatura
       if (request->hasParam(PARAM_INPUT_3)) {
-        inputMessage3 = request->getParam(PARAM_INPUT_3)->value();
+        inputTemp_H = request->getParam(PARAM_INPUT_3)->value();
+      }
+      if (request->hasParam(PARAM_INPUT_4)) {
+        inputTemp_L = request->getParam(PARAM_INPUT_4)->value();
+      }
+      //Preluare interval de procesare
+      if(request->hasParam(PARAM_INPUT_5)){
+        inputInterval= request->getParam(PARAM_INPUT_5)->value();
       }
     }
     else {
-      inputMessage = "No message sent";
+      inputEmail = "No message sent";
     }
-    Serial.println(inputMessage);
-    Serial.println(inputMessage2);
-    Serial.println(inputMessage3);
-    request->send(200, "text/html", "HTTP GET request sent to your ESP.<br><a href=\"/\">Return to Home Page</a>");
+    Serial.println(inputEmail);
+    Serial.println(inputCheck);
+    Serial.println(inputTemp_H);
+    Serial.println(inputTemp_L);
+    Serial.println(inputInterval);
+    request->send(200, "text/html", "Parametri au fost trimisi catre ESP.<br><a href=\"/\">Return to Home Page</a>");
   });
   server.onNotFound(notFound);
   server.begin();
@@ -185,13 +206,15 @@ void loop() {
   sensor.clearFields();
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
     
+    previousMillis = currentMillis;
+    interval=inputInterval.toInt();
+    Serial.print("Interval : ");
+    Serial.println(interval);
     // Temperature in Celsius degrees 
     float temperature = dht.readTemperature();
     float h = dht.readHumidity();
-    Serial.print(temperature);
-    Serial.println(" *C");
+    
     
     sensor.addField("humidity", h);
     sensor.addField("temperature", temperature);
@@ -201,71 +224,78 @@ void loop() {
 
     // Write point
    if (!client.writePoint(sensor)) {
-    Serial.print("InfluxDB write failed: ");
+    Serial.print("Nereusire trimitere catre InfluxDB: ");
     Serial.println(client.getLastErrorMessage());
     }
 
     lastTemperature = String(temperature);
     
-    // Check if temperature is above threshold and if it needs to send the Email alert
-    if(temperature > inputMessage3.toFloat() && inputMessage2 == "true" && !emailSent){
-      String emailMessage = String("Temperature above threshold. Current temperature: ") + 
-                            String(temperature) + String("C");
-      if(sendEmailNotification(emailMessage)) {
-        Serial.println(emailMessage);
-        emailSent = true;
-      }
-      else {
-        Serial.println("Email failed to send");
-      }    
+    // Varificam daca temperatura depaseste pragul impus si trimitem alerta pe mail
+    if (temperature > inputTemp_H.toFloat() && inputCheck == "true" && !emailSent) {
+        String emailMessage = String("Temperatura a depasit pragul setat. Temperatura curenta: ") + String(temperature) + String("*C");
+        if (sendEmailNotification(emailMessage)) {
+             Serial.println(emailMessage);
+            emailSent = true;
+        } 
+          else {
+            Serial.println("Esuare trimitere email");
+            }
     }
+    // Varificam daca temperatura scade sub pragul impus si trimitem alerta pe mail
+    if (temperature < inputTemp_L.toFloat() && inputCheck == "true" && !emailSent) {
+      String emailMessage = String("Temperatura a scazut sub pragul setat. Temperatura curenta: ") + String(temperature) + String("*C");
+        if (sendEmailNotification(emailMessage)) {
+          Serial.println(emailMessage);
+          emailSent = true;
+          }   
+          else {
+          Serial.println("Esuare trimitere email");
+            }
+      }
 
-   
+
   }
 
  }
+
  bool sendEmailNotification(String emailMessage){
-  // Set the SMTP Server Email host, port, account and password
+  // Setam SMTP Server Email host, port, account and password
   smtpData.setLogin(smtpServer, smtpServerPort, emailSenderAccount, emailSenderPassword);
 
-  // For library version 1.2.0 and later which STARTTLS protocol was supported,the STARTTLS will be 
-  // enabled automatically when port 587 was used, or enable it manually using setSTARTTLS function.
-  //smtpData.setSTARTTLS(true);
-
-  // Set the sender name and Email
+  // Setam numele si adresa expediatorului
   smtpData.setSender("ESP32 Alert", emailSenderAccount);
 
-  // Set Email priority or importance High, Normal, Low or 1 to 5 (1 is highest)
+  // Putem seta importanta email la trimitere cu  "High, Normal, Low sau 1 to 5 (1 este cel mai ridicat nivel)""
   smtpData.setPriority("High");
 
-  // Set the subject
+  // Subiectul mail-lui
   smtpData.setSubject(emailSubject);
 
-  // Set the message with HTML format
+  // Setam mesajul
   smtpData.setMessage(emailMessage, true);
 
-  // Add recipients
-  smtpData.addRecipient(inputMessage);
+  // adaugam destinatarul
+  smtpData.addRecipient(inputEmail);
 
   smtpData.setSendCallback(sendCallback);
 
-  // Start sending Email, can be set callback function to track the status
+  // Trimitera email si folosirea functiei callback pentru verificarea statusului
   if (!MailClient.sendMail(smtpData)) {
     Serial.println("Error sending Email, " + MailClient.smtpErrorReason());
     return false;
   }
-  // Clear all data from Email object to free memory
+  
   smtpData.empty();
   return true;
  }
 
- // Callback function to get the Email sending status
+ // Functia Callback pentru statusul email
  void sendCallback(SendStatus msg) {
   // Print the current status
   Serial.println(msg.info());
 
-  // Do something when complete
+  
   if (msg.success()) {
-    Serial.println("----------------");
+    Serial.println("----------------||-------------");
   }
 }
