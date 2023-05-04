@@ -73,7 +73,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   </head><body>
   <h2>Temperatura incapere</h2> 
-  <h3>%TEMPERATURE% &deg;C</h3>
+  <h3>&#x1F321 %TEMPERATURE% &deg;C </h3>
   <h2>Alerta Email ESP32</h2>
   <form action="/get">
     Adresa de email <input type="email" name="email_input" value="%EMAIL_INPUT%" required><br>
@@ -215,6 +215,7 @@ void loop() {
 
     previousMillis = currentMillis;
     if (WiFi.status() == WL_CONNECTED){
+     
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
     Serial.print(interval);
@@ -234,6 +235,7 @@ void loop() {
    if (!client.writePoint(sensor)) {
     Serial.print("Nereusire trimitere catre InfluxDB: ");
     Serial.println(client.getLastErrorMessage());
+    WiFi.reconnect();
     }
 
     lastTemperature = String(temperature);
@@ -260,17 +262,20 @@ void loop() {
           Serial.println("Esuare trimitere email");
             }
       }
+      
         } else {
         Serial.println("WiFi deconectat");
           
           WiFi.reconnect();
+          
+          }
       }
 
 
     }
   
 
- }
+ 
 
  bool sendEmailNotification(String emailMessage){
   // Setam SMTP Server Email host, port, account and password
