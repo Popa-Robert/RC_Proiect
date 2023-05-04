@@ -16,8 +16,8 @@
 DHT dht(DHTPIN, DHTTYPE);
 
 // Datele pentru reteaua de wifi
-const char* ssid = "No Network";
-const char* password = "a7eeb92d";
+const char* ssid = "iPhone - Popa";
+const char* password = "craiova2021";
 
 // Definim detaliile pentru InfluxDB
 
@@ -142,7 +142,7 @@ void setup() {
   Serial.print("ESP IP Address: http://");
   Serial.println(WiFi.localIP());
   
-  sensor.addTag("device", DEVICE);
+  
   timeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
 
   // Initalizam senzorul DHT11
@@ -206,7 +206,7 @@ void loop() {
   sensor.clearFields();
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
-    
+
     previousMillis = currentMillis;
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
