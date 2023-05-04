@@ -61,7 +61,7 @@ String inputTemp_H = "24.0";
 String lastTemperature;
 String inputTemp_L = "21.0";
 //Perioada standard pentru citirea datelor
-String inputInterval = "2000";
+String inputInterval = "2";
 
 // Pagina HTML din care preluam configuratii personalizate
 const char index_html[] PROGMEM = R"rawliteral(
@@ -75,9 +75,9 @@ const char index_html[] PROGMEM = R"rawliteral(
   <form action="/get">
     Adresa de email <input type="email" name="email_input" value="%EMAIL_INPUT%" required><br>
     Notificare email <input type="checkbox" name="enable_email_input" value="true" %ENABLE_EMAIL%><br>
-    Pregul superior <input type="number" step="0.1" name="threshold_top_input" value="%THRESHOLD_TOP%" required><br>
-    Pragul inferior <input type="number" step="0.1" name="threshold_bot_input" value="%THRESHOLD_BOT%" required><br>
-    Interval <input type="number" step="1000" name="interval_input" value="%INTERVAL%" required><br>
+    Pregul superior <input type="number" step="0.1" name="threshold_top_input" value="%THRESHOLD_TOP%" required>&deg;C<br>
+    Pragul inferior <input type="number" step="0.1" name="threshold_bot_input" value="%THRESHOLD_BOT%" required>&deg;C<br>
+    Interval <input type="number" step="1" name="interval_input" value="%INTERVAL%" required> secunde<br>
     <input type="submit" value="Submit">
   </form>
 </body></html>)rawliteral";
@@ -122,7 +122,7 @@ const char* PARAM_INPUT_4 = "threshold_bot_input";
 const char* PARAM_INPUT_5 = "interval_input";
 // Perioada dintre fiecare citire.
 unsigned long previousMillis = 0;     
- long interval = 2000;    
+ long interval = 2;    
 
 
 
@@ -205,12 +205,12 @@ void setup() {
 void loop() {
   sensor.clearFields();
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillis >= interval*1000) {
 
     previousMillis = currentMillis;
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
-    Serial.print(interval/1000);
+    Serial.print(interval);
     Serial.println(" sec");
     // Temperature in Celsius degrees 
     float temperature = dht.readTemperature();
