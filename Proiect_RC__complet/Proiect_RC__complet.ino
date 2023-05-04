@@ -131,9 +131,11 @@ unsigned long previousMillis = 0;
 
 
 SMTPData smtpData;
-
+int led=25;
 void setup() {
   Serial.begin(115200);
+
+   pinMode(led,OUTPUT);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -215,6 +217,7 @@ void loop() {
 
     previousMillis = currentMillis;
     if (WiFi.status() == WL_CONNECTED){
+      digitalWrite(led,LOW);
      
     interval=inputInterval.toInt();
     Serial.print("Interval : ");
@@ -264,6 +267,7 @@ void loop() {
       }
       
         } else {
+          digitalWrite(led,HIGH);
         Serial.println("WiFi deconectat");
           
           WiFi.reconnect();
