@@ -9,6 +9,7 @@
 // Import the InfluxDB libraries
 #include <InfluxDbClient.h>
 #include <InfluxDbCloud.h>
+
 //Importam libaria DHT pentru senzor si setam cei 2 parametri(Pin-ul si tipuls enzorului)
 #include "DHT.h"
 #define DHTPIN 27
@@ -18,7 +19,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // Datele pentru reteaua de wifi
 const char* ssid = "iPhone - Popa";
-const char* password = "craiova2021";
+const char* password = "";
 
 // Definim detaliile pentru InfluxDB
 
@@ -26,10 +27,10 @@ const char* password = "craiova2021";
 #define INFLUXDB_URL "https://us-east-1-1.aws.cloud2.influxdata.com"
 
 // InfluxDB v2 server or cloud API authentication token (Use: InfluxDB UI -> Data -> Tokens -> <select token>)
-#define INFLUXDB_TOKEN "xfsspuK4bx6AknmLuPBgpRJIPBM8tHAXF-T_QZA6EP1Uf6IgQUN44hgnQ9erO1_gDdEqOdhsC_7m0a6rmxlvGA=="
+#define INFLUXDB_TOKEN "***********************"
 
 // InfluxDB v2 organization id (Use: InfluxDB UI -> User -> About -> Common Ids )
-#define INFLUXDB_ORG "poparobert999@gmail.com"
+#define INFLUXDB_ORG "poparobert***********"
 
 // InfluxDB v2 bucket name (Use: InfluxDB UI -> Data -> Buckets)
 #define INFLUXDB_BUCKET "ESP32"
@@ -47,14 +48,14 @@ Point sensor("climate");
 
 
 // Ca sa putem trimite un email folosing Gmail trebuie sa creem o parola folosind link: https://support.google.com/accounts/answer/185833
-#define emailSenderAccount    "popa.robert.u3n@student.ucv.ro"
-#define emailSenderPassword   "mleaywyingsarorl"
+#define emailSenderAccount    "popa.robert.****************"
+#define emailSenderPassword   "**************"
 #define smtpServer            "smtp.gmail.com"
 #define smtpServerPort        587
 #define emailSubject          "[ALERT] Temperature"
 
 // Adresa de email standard a destinatarului
-String inputEmail = "poparobert999@gmail.com";
+String inputEmail = "poparobert***********";
 String enableEmailChecked = "checked";
 String inputCheck = "true";
 // Pragurile standard pentru limitle de temperatura
@@ -131,7 +132,7 @@ unsigned long previousMillis = 0;
 
 
 SMTPData smtpData;
-int led=25;
+int led=32;
 void setup() {
   Serial.begin(115200);
 
@@ -267,10 +268,10 @@ void loop() {
       }
       
         } else {
-          digitalWrite(led,HIGH);
-        Serial.println("WiFi deconectat");
-          
+          digitalWrite(32,HIGH);
+        Serial.println("WiFi deconectat"); 
           WiFi.reconnect();
+          digitalWrite(32,HIGH);
           
           }
       }
